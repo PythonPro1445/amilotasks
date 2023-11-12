@@ -160,11 +160,11 @@
           <h1>Data on Tasks</h1>
           <div class="data-summary">
             <div class="data-item">
-              <div class="green-number">42</div>
+              <div class="green-number">0</div>
               <div class="small-text">Tasks Done</div>
             </div>
             <div class="data-item">
-              <div class="red-number">15</div>
+              <div class="red-number">0</div>
               <div class="small-text">Tasks Not Done</div>
             </div>
           </div>
@@ -205,40 +205,88 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase
-      // Initialize Firebase
-      firebase.initializeApp(firebaseConfig);
-      var database = firebase.database();
+firebase.initializeApp(firebaseConfig);
+  var database = firebase.database();
 
-      // Reference to the tasks in the database
-      var tasksRef = database.ref("tasks");
+  // Reference to the tasks in the database
+  var tasksRef = database.ref("tasks");
 
-      document.getElementById("addTask").addEventListener("click", function() {
-        var taskInput = document.getElementById("taskInput");
-        var taskText = taskInput.value;
+  // Reference to the "Tasks Not Done" count in the database
+  var tasksNotDoneRef = database.ref("tasksNotDone");
 
-        if (taskText.trim() !== "") {
-          // Push the task to the database
-          var newTaskRef = tasksRef.push();
-          newTaskRef.set({
-            task: taskText,
-            timestamp: firebase.database.ServerValue.TIMESTAMP
-          });
+  document.getElementById("addTask").addEventListener("click", function() {
+    var taskInput = document.getElementById("taskInput");
+    var taskText = taskInput.value;
 
-          taskInput.value = "";
-        }
+    if (taskText.trim() !== "") {
+      // Push the task to the database
+      var newTaskRef = tasksRef.push();
+      newTaskRef.set({
+        task: taskText,
+        timestamp: firebase.database.ServerValue.TIMESTAMP
       });
 
-      // Listen for new tasks and update the UI
-      tasksRef.on("child_added", function(snapshot) {
-        var task = snapshot.val().task;
-        var taskList = document.getElementById("taskList");
-        var taskItem = document.createElement("li");
-        taskItem.textContent = task;
-        taskList.appendChild(taskItem);
+      // Increment the "Tasks Not Done" count
+      tasksNotDoneRef.transaction(function(currentCount) {
+        return (currentCount || 0) + 1;
       });
-  </script>
 
+      taskInput.value = "";
+    }
+  });
 
-    </script>
+  // Listen for new tasks and update the UI
+  tasksRef.on("child_added", function(snapshot) {
+    var task = snapshot.val().task;
+    var taskList = document.getElementById("taskList");
+    var taskItem = document.createElement("li");
+    taskItem.textContent = task;
+    taskList.appendChild(taskItem);
+  });
+
+  // Listen for changes in the "Tasks Not Done" count and update the UI
+  tasksNotDoneRef.on("value", function(snapshot) {
+    var tasksNotDoneCount = snapshot.val() || 0;
+    document.querySelector(".red-number").textContent = tasksNotDoneCount;
+  });
+
+    // Reference to the tasks in the database
+    var tasksRef = database.ref("tasks");
+
+// Reference to the "Tasks Not Done" count in the database
+var tasksNotDoneRef = database.ref("tasksNotDone");
+
+// Reference to the "Tasks Done" count in the database
+var tasksDoneRef = database.ref("tasksDone");
+
+// Listen for new tasks and update the UI
+tasksRef.on("child_added", function(snapshot) {
+  var task = snapshot.val().task;
+  var taskList = document.getElementById("taskList");
+  var taskItem = document.createElement("li");
+  taskItem.textContent = task;
+  taskList.appendChild(taskItem);
+});
+
+// Listen for changes in the "Tasks Not Done" count and update the UI
+tasksNotDoneRef.on("value", function(snapshot) {
+  var tasksNotDoneCount = snapshot.val() || 0;
+  document.querySelector(".red-number").textContent = tasksNotDoneCount;
+});
+
+// Listen for changes in the "Tasks Done" count and update the UI
+tasksDoneRef.on("value", function(snapshot) {
+  var tasksDoneCount = snapshot.val() || 0;
+  document.querySelector(".green-number").textContent = tasksDoneCount;
+});
+
+// Listen for changes in the tasks and reset "Tasks Not Done" count to zero if there are no tasks
+tasksRef.on("value", function(snapshot) {
+  var hasTasks = snapshot.exists();
+  if (!hasTasks) {
+    tasksNotDoneRef.set(0);
+  }
+});
+</script>
   </body>
 </html>
