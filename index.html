@@ -287,6 +287,56 @@ tasksRef.on("value", function(snapshot) {
     tasksNotDoneRef.set(0);
   }
 });
+
+// Reference to the tasks in the database
+var tasksRef = database.ref("tasks");
+
+// Reference to the "Tasks Not Done" count in the database
+var tasksNotDoneRef = database.ref("tasksNotDone");
+
+// Reference to the "Tasks Done" count in the database
+var tasksDoneRef = database.ref("tasksDone");
+
+// Reference to the main task list in the DOM
+var taskList = document.getElementById("taskList");
+
+// Listen for new tasks and update the UI
+tasksRef.on("child_added", function(snapshot) {
+  var task = snapshot.val().task;
+  var taskItem = document.createElement("li");
+  taskItem.textContent = task;
+  taskList.appendChild(taskItem);
+});
+
+// Listen for changes in the "Tasks Not Done" count and update the UI
+tasksNotDoneRef.on("value", function(snapshot) {
+  var tasksNotDoneCount = snapshot.val() || 0;
+  document.querySelector(".red-number").textContent = tasksNotDoneCount;
+});
+
+// Listen for changes in the "Tasks Done" count and update the UI
+tasksDoneRef.on("value", function(snapshot) {
+  var tasksDoneCount = snapshot.val() || 0;
+  document.querySelector(".green-number").textContent = tasksDoneCount;
+});
+
+// Listen for changes in the tasks and update the main task list
+tasksRef.on("value", function(snapshot) {
+  var tasks = snapshot.val();
+  taskList.innerHTML = ""; // Clear existing tasks
+
+  if (tasks) {
+    Object.keys(tasks).forEach(function(key) {
+      var task = tasks[key].task;
+      var taskItem = document.createElement("li");
+      taskItem.textContent = task;
+      taskList.appendChild(taskItem);
+    });
+  }
+
+  // Update the "Tasks Not Done" count based on the number of tasks
+  tasksNotDoneRef.set(Object.keys(tasks || {}).length);
+});
 </script>
   </body>
 </html>
